@@ -8,18 +8,16 @@ cat <<EOF >>/autoinstall.yaml
     size: 0
 EOF
 
-# xda=$(lsblk -dn -o NAME | grep -E 'nvme0n1|.da')
-# shellcheck disable=SC2010
-xda=$(ls /dev/ | grep -Ex 'sda|hda|xda|vda|xvda|nvme0n1')
 # 是用 size 寻找分区，number 没什么用
 # https://curtin.readthedocs.io/en/latest/topics/storage.html
 size_os=$(lsblk -bn -o SIZE /dev/disk/by-label/os)
 
-if parted /dev/$xda print | grep '^Partition Table' | grep gpt; then
-  # efi
-  if [ -e /dev/disk/by-label/efi ]; then
-    size_efi=$(lsblk -bn -o SIZE /dev/disk/by-label/efi)
-    cat <<EOF >>/autoinstall.yaml
+# shellcheck disable=SC2154
+if parted "/dev/$xda" print | grep '^Partition Table' | grep gpt; then
+    # efi
+    if [ -e /dev/disk/by-label/efi ]; then
+        size_efi=$(lsblk -bn -o SIZE /dev/disk/by-label/efi)
+        cat <<EOF >>/autoinstall.yaml
   config:
     # disk
     - ptable: gpt
@@ -60,10 +58,10 @@ if parted /dev/$xda print | grep '^Partition Table' | grep gpt; then
       type: mount
       id: mount-efi
 EOF
-  else
-    # bios > 2t
-    size_biosboot=$(parted /dev/$xda unit b print | grep bios_grub | awk '{print $4}' | sed 's/B$//')
-    cat <<EOF >>/autoinstall.yaml
+    else
+        # bios > 2t
+        size_biosboot=$(parted "/dev/$xda" unit b print | grep bios_grub | awk '{print $4}' | sed 's/B$//')
+        cat <<EOF >>/autoinstall.yaml
   config:
     # disk
     - ptable: gpt
@@ -96,10 +94,10 @@ EOF
       type: mount
       id: mount-os
 EOF
-  fi
+    fi
 else
-  # bios
-  cat <<EOF >>/autoinstall.yaml
+    # bios
+    cat <<EOF >>/autoinstall.yaml
   config:
     # disk
     - ptable: msdos
